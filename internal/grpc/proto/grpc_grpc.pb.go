@@ -24,6 +24,7 @@ const (
 	GophKeeper_LoginUser_FullMethodName    = "/grpc.GophKeeper/LoginUser"
 	GophKeeper_UserData_FullMethodName     = "/grpc.GophKeeper/UserData"
 	GophKeeper_TimeStamp_FullMethodName    = "/grpc.GophKeeper/TimeStamp"
+	GophKeeper_DataLock_FullMethodName     = "/grpc.GophKeeper/DataLock"
 	GophKeeper_UpdateData_FullMethodName   = "/grpc.GophKeeper/UpdateData"
 	GophKeeper_LogOut_FullMethodName       = "/grpc.GophKeeper/LogOut"
 )
@@ -37,6 +38,7 @@ type GophKeeperClient interface {
 	LoginUser(ctx context.Context, in *LoginUserRequest, opts ...grpc.CallOption) (*LoginUserResponce, error)
 	UserData(ctx context.Context, in *UserDataRequest, opts ...grpc.CallOption) (*UserDataResponce, error)
 	TimeStamp(ctx context.Context, in *TimeStampRequest, opts ...grpc.CallOption) (*TimeStampResponce, error)
+	DataLock(ctx context.Context, in *DataLockRequest, opts ...grpc.CallOption) (*DataLockResponce, error)
 	UpdateData(ctx context.Context, in *UpdateDataRequest, opts ...grpc.CallOption) (*UpdateDataResponce, error)
 	LogOut(ctx context.Context, in *LogOutRequest, opts ...grpc.CallOption) (*LogOutResponce, error)
 }
@@ -94,6 +96,15 @@ func (c *gophKeeperClient) TimeStamp(ctx context.Context, in *TimeStampRequest, 
 	return out, nil
 }
 
+func (c *gophKeeperClient) DataLock(ctx context.Context, in *DataLockRequest, opts ...grpc.CallOption) (*DataLockResponce, error) {
+	out := new(DataLockResponce)
+	err := c.cc.Invoke(ctx, GophKeeper_DataLock_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *gophKeeperClient) UpdateData(ctx context.Context, in *UpdateDataRequest, opts ...grpc.CallOption) (*UpdateDataResponce, error) {
 	out := new(UpdateDataResponce)
 	err := c.cc.Invoke(ctx, GophKeeper_UpdateData_FullMethodName, in, out, opts...)
@@ -121,6 +132,7 @@ type GophKeeperServer interface {
 	LoginUser(context.Context, *LoginUserRequest) (*LoginUserResponce, error)
 	UserData(context.Context, *UserDataRequest) (*UserDataResponce, error)
 	TimeStamp(context.Context, *TimeStampRequest) (*TimeStampResponce, error)
+	DataLock(context.Context, *DataLockRequest) (*DataLockResponce, error)
 	UpdateData(context.Context, *UpdateDataRequest) (*UpdateDataResponce, error)
 	LogOut(context.Context, *LogOutRequest) (*LogOutResponce, error)
 	mustEmbedUnimplementedGophKeeperServer()
@@ -144,6 +156,9 @@ func (UnimplementedGophKeeperServer) UserData(context.Context, *UserDataRequest)
 }
 func (UnimplementedGophKeeperServer) TimeStamp(context.Context, *TimeStampRequest) (*TimeStampResponce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TimeStamp not implemented")
+}
+func (UnimplementedGophKeeperServer) DataLock(context.Context, *DataLockRequest) (*DataLockResponce, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DataLock not implemented")
 }
 func (UnimplementedGophKeeperServer) UpdateData(context.Context, *UpdateDataRequest) (*UpdateDataResponce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateData not implemented")
@@ -254,6 +269,24 @@ func _GophKeeper_TimeStamp_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GophKeeper_DataLock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DataLockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperServer).DataLock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeper_DataLock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperServer).DataLock(ctx, req.(*DataLockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GophKeeper_UpdateData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateDataRequest)
 	if err := dec(in); err != nil {
@@ -316,6 +349,10 @@ var GophKeeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TimeStamp",
 			Handler:    _GophKeeper_TimeStamp_Handler,
+		},
+		{
+			MethodName: "DataLock",
+			Handler:    _GophKeeper_DataLock_Handler,
 		},
 		{
 			MethodName: "UpdateData",
