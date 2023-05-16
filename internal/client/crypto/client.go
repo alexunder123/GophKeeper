@@ -31,6 +31,7 @@ func NewUserSession() (*UserSession, error) {
 // RefreshToken метод обновляет структуру хранения ключей сессии.
 func (u *UserSession) RefreshToken() error {
 	var err error
+	u = nil
 	u, err = NewUserSession()
 	if err != nil {
 		return err
@@ -122,7 +123,6 @@ func (u *UserSession) EncryptUserData(jsonBZ []byte) ([]byte, error) {
 	}
 	aesgcm, err := cipher.NewGCM(aesblock)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
 		return nil, err
 	}
 	nonce := u.symmetricalKey[len(u.symmetricalKey)-12:]
@@ -139,14 +139,12 @@ func (u *UserSession) DecryptUserData(messageBZ []byte) ([]byte, error) {
 	}
 	aesgcm, err := cipher.NewGCM(aesblock)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
 		return nil, err
 	}
 
 	nonce := u.symmetricalKey[len(u.symmetricalKey)-12:]
 	jsonBZ, err := aesgcm.Open(nil, []byte(nonce), messageBZ, nil)
 	if err != nil {
-		fmt.Printf("error: %v\n", err)
 		return nil, err
 	}
 	return jsonBZ, nil

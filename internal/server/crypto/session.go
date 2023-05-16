@@ -12,8 +12,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// hashPasswd функция хэширует пароль клиента для хранения на сервере
-func hashPasswd(password string) string {
+// HashPasswd функция хэширует пароль клиента для хранения на сервере
+func HashPasswd(password string) string {
 	hash := sha256.New()
 	hash.Write([]byte(password))
 	dst := hash.Sum(nil)

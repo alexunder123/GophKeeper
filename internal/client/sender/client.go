@@ -14,10 +14,10 @@ import (
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
-	"gophkeeper/internal/crypto"
+	"gophkeeper/internal/client/crypto"
 	gkerrors "gophkeeper/internal/errors"
-	pb "gophkeeper/internal/grpc/proto"
-	"gophkeeper/internal/storage"
+	pb "gophkeeper/api/grpc/proto"
+	"gophkeeper/internal/client/storage"
 )
 
 // GophKeeperClient поддерживает все необходимые методы клиента.
@@ -227,8 +227,10 @@ func (c *GophKeeperClient) Download() error {
 	}
 	jsonBZ, err := c.rsa.DecryptUserData(responce.UserData)
 	if err != nil {
+		log.Error().Err(err).Msg("Download DecryptUserData err")
 		return err
 	}
+	
 	err = c.Strg.ImportUserData(jsonBZ, responce.TimeStamp)
 	if err != nil {
 		return err
@@ -248,6 +250,7 @@ func (c *GophKeeperClient) SaveData() error {
 	}
 	messageBZ, err := c.rsa.EncryptUserData(jsonBZ)
 	if err != nil {
+		log.Error().Err(err).Msg("SaveData EncryptUserData err")
 		return err
 	}
 	var request = pb.UpdateDataRequest{SessionID: c.rsa.GetSessionID(), TimeStamp: c.Strg.TimeStamp.Format(time.RFC3339), UserData: messageBZ}
@@ -290,6 +293,7 @@ func (c *GophKeeperClient) UserLogOut() {
 	if err != nil {
 		log.Error().Err(err).Msg("UserLogOut RefreshToken error")
 	}
+	c.Strg = nil
 	c.Strg = storage.NewUserStorage()
 	if noSend {
 		return
@@ -302,4 +306,32 @@ func (c *GophKeeperClient) UserLogOut() {
 	if !responce.Status {
 		fmt.Println("Не удалось удалить сессию на сервере")
 	}
+}
+
+// ChangePassword метод зашифровывает  отправляет на сервер запрос на изменение пароля пользователя.
+func (c *GophKeeperClient) ChangePassword(oldPassword, newPassword string) (bool, error) {
+	old, err := c.rsa.EncryptData(oldPassword, []byte("oldPass"))
+	if err != nil {
+		log.Error().Err(err).Msg("RegisterUser EncryptData error")
+		return false, err
+	}
+	new, err := c.rsa.EncryptData(newPassword, []byte("newPass"))
+	if err != nil {
+		log.Error().Err(err).Msg("RegisterUser EncryptData error")
+		return false, err
+	}
+	var request = pb.ChangePasswordRequest{SessionID: c.rsa.GetSessionID(), OldPassword: old, NewPassword: new}
+	request.UserSign, err = c.rsa.UserSign()
+	if err != nil {
+		log.Error().Err(err).Msg("RegisterUser EncryptOAEP signing error")
+		return false, err
+	}
+	responce, err := c.cc.ChangePassword(context.Background(), &request)
+	if err != nil {
+		return false, err
+	}
+	if c.rsa.CheckSign(responce.Sign) != nil {
+		return false, gkerrors.ErrSignIncorrect
+	}
+	return responce.Status, nil
 }

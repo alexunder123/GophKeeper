@@ -19,7 +19,11 @@ func NewUserConfig() (*UserConfig, error) {
 		return nil, err
 	}
 	defer file.Close()
-	var fileBZ = make([]byte, 0)
+	fi, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	var fileBZ = make([]byte, fi.Size())
 	_, err = file.Read(fileBZ)
 	if err != nil {
 		log.Error().Err(err).Msg("NewConfig reading file err")

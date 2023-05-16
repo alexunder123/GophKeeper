@@ -25,7 +25,11 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 	defer file.Close()
-	var fileBZ = make([]byte, 0)
+	fi, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	var fileBZ = make([]byte, fi.Size())
 	_, err = file.Read(fileBZ)
 	if err != nil {
 		log.Error().Err(err).Msg("NewConfig reading file err")
@@ -45,11 +49,11 @@ func NewConfig() (*Config, error) {
 		newConf = true
 	}
 	if config.DatabaseDirectory == "" {
-		config.DatabaseDirectory = ""
+		config.DatabaseDirectory = "/users/"
 		newConf = true
 	}
 	if config.SQLDatabase == "" {
-		config.SQLDatabase = "user=postgres password=1 host=localhost port=5432 database=postgres sslmode=disable" //postgres://postgres:1@localhost:5432/postgres?sslmode=disable
+		config.SQLDatabase = "postgres://postgres:1@localhost:5432/postgres?sslmode=disable" //user=postgres password=1 host=localhost port=5432 database=postgres sslmode=disable
 		newConf = true
 	}
 	if config.Expires == 0 {

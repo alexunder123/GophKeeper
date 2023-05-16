@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"gophkeeper/internal/config"
 	gkerrors "gophkeeper/internal/errors"
+	"gophkeeper/internal/server/config"
 	"strings"
 	"sync"
 	"time"
@@ -39,8 +39,10 @@ func NewSessions(cfg *config.Config) *Sessions {
 
 func (s *Sessions) sessionsCleaner(period int) {
 	go func() {
+		ticker := time.NewTicker(time.Hour * time.Duration(period/2))
+		defer ticker.Stop()
 		for {
-			time.Sleep(time.Hour * time.Duration(period) / 2)
+			<-ticker.C
 			s.Lock()
 			for i, v := range s.sessions {
 				if !v.expires.After(time.Now()) {
@@ -110,7 +112,7 @@ func (s *Sessions) DecryptLogin(sessionID string, userLoginBZ []byte) (string, s
 	if !found {
 		return "", "", gkerrors.ErrLoginIncorrect
 	}
-	return login, hashPasswd(pass), nil
+	return login, HashPasswd(pass), nil
 }
 
 // EncryptData метод зашифровывает сообщение перед отправкой
@@ -124,6 +126,19 @@ func (s *Sessions) EncryptData(sessionID, message string, label []byte) ([]byte,
 		return nil, err
 	}
 	return ciphertext, nil
+}
+
+// DecryptPassword метод расшифровывает полученное сообщение
+func (s *Sessions) DecryptPassword(sessionID string, messageBZ, label []byte) (string, error) {
+	s.RLock()
+	privateKey := s.sessions[sessionID].privateKey
+	s.RUnlock()
+	hash := sha256.New()
+	message, err := rsa.DecryptOAEP(hash, rand.Reader, privateKey, messageBZ, label)
+	if err != nil {
+		return "", err
+	}
+	return HashPasswd(string(message)), nil
 }
 
 // SignData метод создает подпись сервера для отправки сообщений

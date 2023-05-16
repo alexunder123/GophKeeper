@@ -1,10 +1,13 @@
+// Модуль предназначен для хранения в оперативной памяти данных пользователя на клиенте.
+// Модуль отвечает за вывод на экран пользователя сохраненных данных клиента и их редактирование.
+
 package storage
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gophkeeper/internal/crypto"
+	"gophkeeper/internal/client/crypto"
 	gkerrors "gophkeeper/internal/errors"
 	"os"
 	"time"

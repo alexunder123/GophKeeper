@@ -96,6 +96,18 @@ message logOutResponce {
   bool status = 1; //результат true - пользователь разлогинен, false - ошибка, уточнение в error
 }
 
+message changePasswordRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes oldPassword = 2; //зашифрованные текущий пароль пользователя
+  bytes newPassword = 3; //зашифрованные новый пароль пользователя
+  bytes userSign = 4; //Подпись данных пользователем
+}
+
+message changePasswordResponce {
+  bool status = 1; //результат true - пароль изменен, false - ошибка, уточнение в error
+  bytes sign = 2; //Подпись данных сервером
+}
+
 service GophKeeper {
   rpc NewSessionID(newSessionIDRequest) returns (newSessionIDResponce);
   rpc NewUser(newUserRequest) returns (newUserResponce);
@@ -105,4 +117,5 @@ service GophKeeper {
   rpc DataLock(dataLockRequest) returns (dataLockResponce);
   rpc UpdateData(updateDataRequest) returns (updateDataResponce);
   rpc LogOut(logOutRequest) returns (logOutResponce);
+  rpc ChangePassword(changePasswordRequest) returns (changePasswordResponce);
 }

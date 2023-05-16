@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"gophkeeper/internal/sender"
+	"gophkeeper/internal/client/sender"
 )
 
 // EnteringMenu функция запрашивает сессию перед началом аутентификации пользователя
@@ -177,6 +177,7 @@ func mainMenu(sndr sender.GophKeeperClient) bool {
 		S - сохранить данные на сервер;
 		V - посмотреть пользовательские данные
 		E - отредактировать или добавить новые данные;
+		U - изменить пароль;
 		L - разлогиниться
 		Q - завершить работу`)
 		fmt.Scanln(&act)
@@ -222,6 +223,8 @@ func mainMenu(sndr sender.GophKeeperClient) bool {
 			viewData(sndr)
 		case "E", "e":
 			editData(sndr)
+		case "U", "u":
+			editPassword(sndr)
 		case "L", "l":
 			sndr.UserLogOut()
 			return true
@@ -467,4 +470,58 @@ func editData(sndr sender.GophKeeperClient) {
 			fmt.Println("Команда не распознана")
 		}
 	}
+}
+
+func editPassword(sndr sender.GophKeeperClient) {
+	var oldPassword, newPassword, checkPassword string
+	for {
+		fmt.Println("Введите текущий пароль")
+		fmt.Scanln(&oldPassword)
+		if oldPassword == "" {
+			fmt.Println("Пароль не может быть пустым")
+			continue
+		}
+		break
+	}
+	for {
+		fmt.Println("Введите новый пароль")
+		fmt.Scanln(&newPassword)
+		if newPassword == "" {
+			fmt.Println("Пароль не может быть пустым")
+			continue
+		}
+		fmt.Println("Повторите новый пароль")
+		fmt.Scanln(&checkPassword)
+		if checkPassword == "" {
+			fmt.Println("Пароль не может быть пустым")
+			continue
+		}
+		if newPassword != checkPassword {
+			fmt.Println("Новый пароль и его повторение не совпадают")
+			continue
+		}
+		break
+	}
+	true, err := sndr.ChangePassword(oldPassword, newPassword)
+	st, ok := status.FromError(err)
+	if ok {
+		if st.Code() == codes.InvalidArgument {
+			fmt.Println("Неверный пароль")
+			return
+		}
+		if st.Code() == codes.Unauthenticated {
+			fmt.Println("Ошибка проверки подписи или время сессии истекло. Попробуйте перелогиниться")
+			return
+		}
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("ChangePassword error")
+		fmt.Println("Произошла ошибка при попытке изменения пароля")
+		return
+	}
+	if true {
+		fmt.Println("Пароль успешно изменен")
+		return
+	}
+	fmt.Println("Не удалось измененить пароль")
 }

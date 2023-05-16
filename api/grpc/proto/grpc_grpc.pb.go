@@ -19,14 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	GophKeeper_NewSessionID_FullMethodName = "/grpc.GophKeeper/NewSessionID"
-	GophKeeper_NewUser_FullMethodName      = "/grpc.GophKeeper/NewUser"
-	GophKeeper_LoginUser_FullMethodName    = "/grpc.GophKeeper/LoginUser"
-	GophKeeper_UserData_FullMethodName     = "/grpc.GophKeeper/UserData"
-	GophKeeper_TimeStamp_FullMethodName    = "/grpc.GophKeeper/TimeStamp"
-	GophKeeper_DataLock_FullMethodName     = "/grpc.GophKeeper/DataLock"
-	GophKeeper_UpdateData_FullMethodName   = "/grpc.GophKeeper/UpdateData"
-	GophKeeper_LogOut_FullMethodName       = "/grpc.GophKeeper/LogOut"
+	GophKeeper_NewSessionID_FullMethodName   = "/grpc.GophKeeper/NewSessionID"
+	GophKeeper_NewUser_FullMethodName        = "/grpc.GophKeeper/NewUser"
+	GophKeeper_LoginUser_FullMethodName      = "/grpc.GophKeeper/LoginUser"
+	GophKeeper_UserData_FullMethodName       = "/grpc.GophKeeper/UserData"
+	GophKeeper_TimeStamp_FullMethodName      = "/grpc.GophKeeper/TimeStamp"
+	GophKeeper_DataLock_FullMethodName       = "/grpc.GophKeeper/DataLock"
+	GophKeeper_UpdateData_FullMethodName     = "/grpc.GophKeeper/UpdateData"
+	GophKeeper_LogOut_FullMethodName         = "/grpc.GophKeeper/LogOut"
+	GophKeeper_ChangePassword_FullMethodName = "/grpc.GophKeeper/ChangePassword"
 )
 
 // GophKeeperClient is the client API for GophKeeper service.
@@ -41,6 +42,7 @@ type GophKeeperClient interface {
 	DataLock(ctx context.Context, in *DataLockRequest, opts ...grpc.CallOption) (*DataLockResponce, error)
 	UpdateData(ctx context.Context, in *UpdateDataRequest, opts ...grpc.CallOption) (*UpdateDataResponce, error)
 	LogOut(ctx context.Context, in *LogOutRequest, opts ...grpc.CallOption) (*LogOutResponce, error)
+	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponce, error)
 }
 
 type gophKeeperClient struct {
@@ -123,6 +125,15 @@ func (c *gophKeeperClient) LogOut(ctx context.Context, in *LogOutRequest, opts .
 	return out, nil
 }
 
+func (c *gophKeeperClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponce, error) {
+	out := new(ChangePasswordResponce)
+	err := c.cc.Invoke(ctx, GophKeeper_ChangePassword_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GophKeeperServer is the server API for GophKeeper service.
 // All implementations must embed UnimplementedGophKeeperServer
 // for forward compatibility
@@ -135,6 +146,7 @@ type GophKeeperServer interface {
 	DataLock(context.Context, *DataLockRequest) (*DataLockResponce, error)
 	UpdateData(context.Context, *UpdateDataRequest) (*UpdateDataResponce, error)
 	LogOut(context.Context, *LogOutRequest) (*LogOutResponce, error)
+	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponce, error)
 	mustEmbedUnimplementedGophKeeperServer()
 }
 
@@ -165,6 +177,9 @@ func (UnimplementedGophKeeperServer) UpdateData(context.Context, *UpdateDataRequ
 }
 func (UnimplementedGophKeeperServer) LogOut(context.Context, *LogOutRequest) (*LogOutResponce, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LogOut not implemented")
+}
+func (UnimplementedGophKeeperServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponce, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangePassword not implemented")
 }
 func (UnimplementedGophKeeperServer) mustEmbedUnimplementedGophKeeperServer() {}
 
@@ -323,6 +338,24 @@ func _GophKeeper_LogOut_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GophKeeper_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperServer).ChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeper_ChangePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperServer).ChangePassword(ctx, req.(*ChangePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GophKeeper_ServiceDesc is the grpc.ServiceDesc for GophKeeper service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -361,6 +394,10 @@ var GophKeeper_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LogOut",
 			Handler:    _GophKeeper_LogOut_Handler,
+		},
+		{
+			MethodName: "ChangePassword",
+			Handler:    _GophKeeper_ChangePassword_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

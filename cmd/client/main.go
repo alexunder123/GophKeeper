@@ -8,12 +8,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"gophkeeper/internal/config"
-	"gophkeeper/internal/crypto"
+	"gophkeeper/internal/client/config"
+	"gophkeeper/internal/client/crypto"
 	"gophkeeper/internal/logger"
-	"gophkeeper/internal/menu"
-	"gophkeeper/internal/sender"
-	"gophkeeper/internal/storage"
+	"gophkeeper/internal/client/menu"
+	"gophkeeper/internal/client/sender"
+	"gophkeeper/internal/client/storage"
 )
 
 func main() {

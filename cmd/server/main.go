@@ -11,12 +11,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"gophkeeper/internal/config"
-	"gophkeeper/internal/crypto"
-	"gophkeeper/internal/grpc/proto"
-	"gophkeeper/internal/handler"
+	"gophkeeper/internal/server/config"
+	"gophkeeper/internal/server/crypto"
+	"gophkeeper/api/grpc/proto"
+	"gophkeeper/internal/server/handler"
 	"gophkeeper/internal/logger"
-	"gophkeeper/internal/storage"
+	"gophkeeper/internal/server/storage"
 )
 
 func main() {
