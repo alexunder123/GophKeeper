@@ -209,9 +209,19 @@ func mainMenu(sndr sender.GophKeeperClient) bool {
 		case "S", "s":
 			err := sndr.SaveData()
 			st, ok := status.FromError(err)
-			if ok && st.Code() == codes.Unauthenticated {
-				fmt.Println("Ошибка проверки подписи или время сессии истекло. Попробуйте перелогиниться")
-				continue
+			if ok {
+				if st.Code() == codes.PermissionDenied {
+					fmt.Println("Данные на сервере заблокированы на изменение другим пользователем")
+					continue
+				}
+				if st.Code() == codes.FailedPrecondition {
+					fmt.Printf("Время последнего сохранения на сервере и клиенте не совпадают")
+					continue
+				}
+				if st.Code() == codes.Unauthenticated {
+					fmt.Println("Ошибка проверки подписи или время сессии истекло. Попробуйте перелогиниться")
+					continue
+				}
 			}
 			if err != nil {
 				fmt.Println("Произошла ошибка в процессе сохранения данных")

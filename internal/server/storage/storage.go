@@ -17,6 +17,7 @@ import (
 	"gophkeeper/internal/server/crypto"
 )
 
+// Storager интерфейс базы данных сервера.
 type Storager interface {
 	CheckUser(string) (bool, error)
 	RegisterUser(string, string) (string, string, string, error)

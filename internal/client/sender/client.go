@@ -7,17 +7,16 @@ import (
 	"context"
 	"crypto/rsa"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
-	"gophkeeper/internal/client/crypto"
-	gkerrors "gophkeeper/internal/errors"
 	pb "gophkeeper/api/grpc/proto"
+	"gophkeeper/internal/client/crypto"
 	"gophkeeper/internal/client/storage"
+	gkerrors "gophkeeper/internal/errors"
 )
 
 // GophKeeperClient поддерживает все необходимые методы клиента.
@@ -230,7 +229,7 @@ func (c *GophKeeperClient) Download() error {
 		log.Error().Err(err).Msg("Download DecryptUserData err")
 		return err
 	}
-	
+
 	err = c.Strg.ImportUserData(jsonBZ, responce.TimeStamp)
 	if err != nil {
 		return err
@@ -261,10 +260,6 @@ func (c *GophKeeperClient) SaveData() error {
 	}
 	log.Debug().Msgf("Данные для сохранения на сервер отправлены")
 	responce, err := c.cc.UpdateData(context.Background(), &request)
-	if errors.Is(err, gkerrors.ErrLocked) {
-		fmt.Printf("Данные на сервере заблокированы на изменение другим пользователем до: %s\n", responce.TimeStamp)
-		return nil
-	}
 	if err != nil {
 		return err
 	}

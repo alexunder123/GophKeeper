@@ -51,7 +51,9 @@ func (u *UserSession) GetSessionID() string {
 // WriteSessionID метод сохраняет идентификатор сессии пользователя и открытый ключ сервера.
 func (u *UserSession) WriteSessionID(sessionID string, serverPublicKey *rsa.PublicKey) {
 	u.sessionID = sessionID
-	u.serverPublicKey = serverPublicKey
+	if serverPublicKey != nil { // сделал проверку для редактирования sessionID в тестах
+		u.serverPublicKey = serverPublicKey
+	}
 }
 
 // WriteUserID метод сохраняет идентификатор пользователя и ключ для шифрования данных.

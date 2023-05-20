@@ -8,16 +8,15 @@ import (
 	"encoding/gob"
 	"errors"
 
+	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	pb "gophkeeper/api/grpc/proto"
 	gkerrors "gophkeeper/internal/errors"
 	"gophkeeper/internal/server/config"
 	"gophkeeper/internal/server/crypto"
 	"gophkeeper/internal/server/storage"
-
-	pb "gophkeeper/api/grpc/proto"
-
-	"github.com/rs/zerolog/log"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // GophKeeperServer поддерживает все необходимые методы сервера.
@@ -199,7 +198,7 @@ func (s *GophKeeperServer) UserData(ctx context.Context, in *pb.UserDataRequest)
 			log.Error().Err(err).Msg("UserData EncryptOAEP signing error")
 			return nil, status.Error(codes.Internal, "EncryptData error")
 		}
-		return &responce, nil //status.Error(codes.NotFound, "user hasn't saved data")
+		return &responce, nil
 	}
 	if err != nil {
 		log.Error().Err(err).Msg("UserData getData error")
@@ -328,12 +327,12 @@ func (s *GophKeeperServer) ChangePassword(ctx context.Context, in *pb.ChangePass
 		log.Error().Err(err).Msg("UserData userID empty")
 		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
 	}
-	old, err := s.rsa.DecryptPassword(in.SessionID, []byte(in.OldPassword), []byte("oldPass"))
+	old, err := s.rsa.DecryptPassword(in.SessionID, in.OldPassword, []byte("oldPass"))
 	if err != nil {
 		log.Error().Err(err).Msg("NewUser DecryptLogin error")
 		return nil, status.Error(codes.Internal, "DecryptLogin error")
 	}
-	new, err := s.rsa.DecryptPassword(in.SessionID, []byte(in.NewPassword), []byte("newPass"))
+	new, err := s.rsa.DecryptPassword(in.SessionID, in.NewPassword, []byte("newPass"))
 	if err != nil {
 		log.Error().Err(err).Msg("NewUser DecryptLogin error")
 		return nil, status.Error(codes.Internal, "DecryptLogin error")

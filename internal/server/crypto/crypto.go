@@ -57,7 +57,7 @@ func (s *Sessions) sessionsCleaner(period int) {
 // NewSessionID метод генерирует асимметричный ключ и сохраняет новую сессию
 func (s *Sessions) NewSessionID(userKey *rsa.PublicKey) (string, *rsa.PublicKey, error) {
 	sessionID := RandomID(s.cfg.LenghtSesionID)
-	privateKey, err := generateKeys()
+	privateKey, err := GenerateKeys()
 	if err != nil {
 		return "", nil, err
 	}
