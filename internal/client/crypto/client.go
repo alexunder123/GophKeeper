@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"fmt"
 )
 
 // UserSession структура для хранения данных одной сессии.
@@ -127,7 +126,6 @@ func (u *UserSession) EncryptUserData(jsonBZ []byte) ([]byte, error) {
 	}
 	nonce := u.symmetricalKey[len(u.symmetricalKey)-12:]
 	messageBZ := aesgcm.Seal(nil, []byte(nonce), jsonBZ, nil)
-	fmt.Printf("Размер зашифрованных данных клиента = %d\n", len(messageBZ))
 	return messageBZ, nil
 }
 

@@ -1,4 +1,5 @@
 // Основной модуль приложения клиента
+// go:build -ldflags "-X main.buildVersion=v0.0.1 -X main.buildDate=dd.mm.yyyy"
 package main
 
 import (
@@ -10,11 +11,17 @@ import (
 
 	"gophkeeper/internal/client/config"
 	"gophkeeper/internal/client/crypto"
-	"gophkeeper/internal/logger"
 	"gophkeeper/internal/client/menu"
 	"gophkeeper/internal/client/sender"
 	"gophkeeper/internal/client/storage"
+	"gophkeeper/internal/logger"
 )
+
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+)
+
 
 func main() {
 	logger.Newlogger()
@@ -33,6 +40,7 @@ func main() {
 		log.Fatal().Err(err).Msg("gRPC connection error")
 	}
 	sndr := sender.NewGophKeeperClient(conn, rsa, strg)
+	fmt.Printf("Менеджер паролей GophKeeper. Версия клиента: %s, Дата сборки: %s\n", buildVersion, buildDate)
 	fmt.Println("Клиент запущен, устанавливаю соединение с сервером")
 	for {
 		if !menu.EnteringMenu(sndr) {

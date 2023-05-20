@@ -21,7 +21,7 @@ func EnteringMenu(sndr sender.GophKeeperClient) bool {
 		fmt.Println("Соединение с сервером не установлено, попробовать еще раз?")
 		for {
 			var act string
-			fmt.Print("Введите команду Yes или No")
+			fmt.Print("Введите команду Yes или No: ")
 			fmt.Scanln(&act)
 			switch act {
 			case "Y", "y", "Yes", "yes":
@@ -178,7 +178,7 @@ func mainMenu(sndr sender.GophKeeperClient) bool {
 		V - посмотреть пользовательские данные
 		E - отредактировать или добавить новые данные;
 		U - изменить пароль;
-		L - разлогиниться
+		L - разлогиниться;
 		Q - завершить работу`)
 		fmt.Scanln(&act)
 		switch act {

@@ -154,12 +154,12 @@ func (c *GophKeeperClient) CheckTimeStamp() error {
 		return gkerrors.ErrSignIncorrect
 	}
 	if responce.TimeStamp != c.Strg.TimeStamp.Format(time.RFC3339) {
-		fmt.Printf("Время последнего сохранения на сервере и клиенте не совпадают. На сервере = %s, на клиенте = %s", responce.TimeStamp, c.Strg.TimeStamp.Format(time.RFC3339))
+		fmt.Printf("Время последнего сохранения на сервере и клиенте не совпадают. На сервере = %s, на клиенте = %s\n", responce.TimeStamp, c.Strg.TimeStamp.Format(time.RFC3339))
 	} else {
 		fmt.Println("Время последнего сохранения на сервере и клиенте совпадают")
 	}
 	if responce.Locked {
-		fmt.Printf("Данные на сервере заблокированы на изменение другим пользователем до: %s", responce.TimeLocked)
+		fmt.Printf("Данные на сервере заблокированы на изменение другим пользователем до: %s\n", responce.TimeLocked)
 	}
 	return nil
 }
