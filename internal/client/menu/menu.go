@@ -277,7 +277,13 @@ func enterLogin() (string, string) {
 
 // viewData функция меню для просмотра существующих данных клиента
 func viewData(sndr sender.GophKeeperClient) {
-	sndr.Strg.ListUserData()
+	passwords, cards, texts, binaries := sndr.Strg.ListUserData()
+	fmt.Printf(`В базе содержится следующее количество записей:
+	Количество сохраненных паролей: %d
+	Количество сохраненных карт: %d
+	Количество сохраненных произвольных текстов: %d
+	Количество сохраненных бинарных данных: %d
+	`, passwords, cards, texts, binaries)
 	for {
 		var act string
 		fmt.Println(`Введите команду для просмотра детальной информации:
@@ -289,7 +295,7 @@ func viewData(sndr sender.GophKeeperClient) {
 		fmt.Scanln(&act)
 		switch act {
 		case "P", "p":
-			sndr.Strg.SliceUserData(1)
+			printSliceUserData(usersPasswords, sndr)
 		loop_P:
 			for {
 				fmt.Println("Для просмотра детальной информации введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -304,11 +310,11 @@ func viewData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.StringUserData(1, i-1)
+					printStringUserData(usersPasswords, i-1, sndr)
 				}
 			}
 		case "C", "c":
-			sndr.Strg.SliceUserData(2)
+			printSliceUserData(usersCards, sndr)
 		loop_C:
 			for {
 				fmt.Println("Для просмотра детальной информации введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -323,11 +329,11 @@ func viewData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.StringUserData(2, i-1)
+					printStringUserData(usersCards, i-1, sndr)
 				}
 			}
 		case "T", "t":
-			sndr.Strg.SliceUserData(3)
+			printSliceUserData(usersTexts, sndr)
 		loop_T:
 			for {
 				fmt.Println("Для просмотра детальной информации введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -342,11 +348,11 @@ func viewData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.StringUserData(3, i-1)
+					printStringUserData(usersTexts, i-1, sndr)
 				}
 			}
 		case "B", "b":
-			sndr.Strg.SliceUserData(4)
+			printSliceUserData(usersBinaries, sndr)
 		loop_B:
 			for {
 				fmt.Println("Для просмотра детальной информации введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -361,7 +367,7 @@ func viewData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.StringUserData(4, i-1)
+					printStringUserData(usersBinaries, i-1, sndr)
 				}
 			}
 		case "R", "r":
@@ -379,7 +385,13 @@ func editData(sndr sender.GophKeeperClient) {
 		fmt.Println("Ошибка блокировки данных. Возвращаю в предыдущее меню")
 		return
 	}
-	sndr.Strg.ListUserData()
+	passwords, cards, texts, binaries := sndr.Strg.ListUserData()
+	fmt.Printf(`В базе содержится следующее количество записей:
+	Количество сохраненных паролей: %d
+	Количество сохраненных карт: %d
+	Количество сохраненных произвольных текстов: %d
+	Количество сохраненных бинарных данных: %d
+	`, passwords, cards, texts, binaries)
 	for {
 		var act string
 		fmt.Println(`Введите команду для выбора раздела:
@@ -391,7 +403,7 @@ func editData(sndr sender.GophKeeperClient) {
 		fmt.Scanln(&act)
 		switch act {
 		case "P", "p":
-			sndr.Strg.SliceUserData(1)
+			printSliceUserData(usersPasswords, sndr)
 		loop_P:
 			for {
 				fmt.Println("для добавления новой записи введите N\nДля редактирования введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -399,7 +411,7 @@ func editData(sndr sender.GophKeeperClient) {
 				fmt.Scanln(&act)
 				switch act {
 				case "N", "n":
-					sndr.Strg.AddUserData(1)
+					addUsersData(usersPasswords, sndr)
 				case "0":
 					break loop_P
 				default:
@@ -408,11 +420,11 @@ func editData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.EditUserData(1, i-1)
+					editUsersData(usersPasswords, i, sndr)
 				}
 			}
 		case "C", "c":
-			sndr.Strg.SliceUserData(2)
+			printSliceUserData(usersCards, sndr)
 		loop_N:
 			for {
 				fmt.Println("для добавления новой записи введите N\nДля редактирования введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -420,7 +432,7 @@ func editData(sndr sender.GophKeeperClient) {
 				fmt.Scanln(&act)
 				switch act {
 				case "N", "n":
-					sndr.Strg.AddUserData(2)
+					addUsersData(usersCards, sndr)
 				case "0":
 					break loop_N
 				default:
@@ -429,11 +441,11 @@ func editData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.EditUserData(2, i-1)
+					editUsersData(usersCards, i, sndr)
 				}
 			}
 		case "T", "t":
-			sndr.Strg.SliceUserData(3)
+			printSliceUserData(usersTexts, sndr)
 		loop_T:
 			for {
 				fmt.Println("для добавления новой записи введите N\nДля редактирования введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -441,7 +453,7 @@ func editData(sndr sender.GophKeeperClient) {
 				fmt.Scanln(&act)
 				switch act {
 				case "N", "n":
-					sndr.Strg.AddUserData(3)
+					addUsersData(usersTexts, sndr)
 				case "0":
 					break loop_T
 				default:
@@ -450,11 +462,11 @@ func editData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.EditUserData(3, i-1)
+					editUsersData(usersTexts, i, sndr)
 				}
 			}
 		case "B", "b":
-			sndr.Strg.SliceUserData(4)
+			printSliceUserData(usersTexts, sndr)
 		loop_B:
 			for {
 				fmt.Println("для добавления новой записи введите N\nДля редактирования введите номер записи, или введите 0 для возврата в предыдущее меню")
@@ -462,7 +474,7 @@ func editData(sndr sender.GophKeeperClient) {
 				fmt.Scanln(&act)
 				switch act {
 				case "N", "n":
-					sndr.Strg.AddUserData(4)
+					addUsersData(usersBinaries, sndr)
 				case "0":
 					break loop_B
 				default:
@@ -471,7 +483,7 @@ func editData(sndr sender.GophKeeperClient) {
 						fmt.Println("Команда не распознана")
 						break
 					}
-					sndr.Strg.EditUserData(4, i-1)
+					editUsersData(usersBinaries, i, sndr)
 				}
 			}
 		case "R", "r":

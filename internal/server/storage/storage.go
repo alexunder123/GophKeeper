@@ -36,7 +36,7 @@ type Storage struct {
 	db  *sql.DB
 }
 
-//go:embed migrate\*.sql
+//go:embed migrate/*.sql
 var embedMigrations embed.FS
 
 // NewStorage метод генерирует хранилище оперативных данных.
@@ -166,7 +166,7 @@ func (s *Storage) UsersDataLock(userID, sessionID string) (bool, string) {
 	if err == nil {
 		lock, err := time.Parse(time.RFC3339, timeLock)
 		if err != nil {
-			log.Error().Err(err).Msg("UsersDataLock parsing timeLock error")
+			log.Error().Err(err).Msgf("UsersDataLock parsing timeLock error. userID = %s, timeLock = %s", userID, timeLock)
 		} else if lock.After(time.Now()) {
 			return true, timeLock
 		}
@@ -179,7 +179,7 @@ func (s *Storage) UsersDataLock(userID, sessionID string) (bool, string) {
 	timeLock = time.Now().Add(time.Minute * time.Duration(s.cfg.LockingTime)).Format(time.RFC3339)
 	_, err = s.db.Exec("INSERT INTO GophKeeperLocks(user_id, sessionID, time_lock) VALUES($1, $2, $3)", userID, sessionID, timeLock)
 	if err != nil {
-		log.Error().Err(err).Msg("UsersDataLock inserting DB error")
+		log.Error().Err(err).Msgf("UsersDataLock inserting DB error. userID = %s", userID)
 		return false, ""
 	}
 	return true, timeLock
@@ -192,7 +192,7 @@ func (s *Storage) UpdateUserData(userID, sessionID, userTimeStamp string, userDa
 	if err == nil {
 		lock, err := time.Parse(time.RFC3339, lockedSessionID)
 		if err != nil {
-			log.Error().Err(err).Msg("UpdateUserData parsing timeLock error")
+			log.Error().Err(err).Msgf("UpdateUserData parsing timeLock error. userID = %s, timeLock = %s", userID, timeLock)
 		} else if lock.After(time.Now()) && sessionID != lockedSessionID {
 			return true, timeLock, gkerrors.ErrLocked
 		}
@@ -214,7 +214,7 @@ func (s *Storage) UpdateUserData(userID, sessionID, userTimeStamp string, userDa
 	log.Debug().Msgf("Запись об изменениях в БД обновлена")
 	_, err = s.db.Exec("DELETE FROM GophKeeperLocks WHERE user_id=$1", userID)
 	if err != nil {
-		log.Error().Err(err).Msg("UsersDataLock deleting lock from DB error")
+		log.Error().Err(err).Msgf("UsersDataLock deleting lock from DB error. userID = %s", userID)
 	}
 	return true, timeStamp, nil
 }

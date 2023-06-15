@@ -18,10 +18,12 @@ import (
 	"gophkeeper/internal/client/sender"
 	clientSTRG "gophkeeper/internal/client/storage"
 	gkerrors "gophkeeper/internal/errors"
+	clientInterceptor "gophkeeper/internal/client/interceptor"
 	"gophkeeper/internal/logger"
 	"gophkeeper/internal/mocks"
 	"gophkeeper/internal/server/config"
 	"gophkeeper/internal/server/crypto"
+	"gophkeeper/internal/server/interceptor"
 )
 
 func TestServer(t *testing.T) {
@@ -41,7 +43,8 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("gRPC server announce error")
 	}
-	server := grpc.NewServer()
+	interceptor := interceptor.NewAuthInterceptor(rsa)
+	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor.Unary()))
 	proto.RegisterGophKeeperServer(server, gRPCconf)
 	reflection.Register(server)
 	go func() {
@@ -60,7 +63,8 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("NewUserSession generating key error")
 	}
-	conn, err := grpc.Dial(clientCnfg.RunAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	auth := clientInterceptor.NewAuthClient(clientRsa)
+	conn, err := grpc.Dial(clientCnfg.RunAddress, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithUnaryInterceptor(auth.Unary()))
 	if err != nil {
 		log.Fatal().Err(err).Msg("gRPC connection error")
 	}

@@ -1,18 +1,10 @@
 // Модуль предназначен для хранения в оперативной памяти данных пользователя на клиенте.
-// Модуль отвечает за вывод на экран пользователя сохраненных данных клиента и их редактирование.
 
 package storage
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"gophkeeper/internal/client/crypto"
-	gkerrors "gophkeeper/internal/errors"
-	"os"
 	"time"
-
-	"github.com/rs/zerolog/log"
 )
 
 // Password структура для хранения логинов и паролей клиента.
@@ -79,7 +71,7 @@ func (s *UserStorage) ImportUserData(jsonBZ []byte, timeStamp string) error {
 	return nil
 }
 
-// ExportUserData метод раскодирует и сохраняет в хранилище данные пользователя.
+// ExportUserData метод кодирует данные пользователя для отправки.
 func (s *UserStorage) ExportUserData() ([]byte, error) {
 	jsonBZ, err := json.Marshal(s)
 	if err != nil {
@@ -88,236 +80,99 @@ func (s *UserStorage) ExportUserData() ([]byte, error) {
 	return jsonBZ, nil
 }
 
-// ListUserData метод выводит на экран количество сохраненных строк пользователя.
-func (s *UserStorage) ListUserData() {
-	fmt.Printf(`В базе содержится следующее количество записей:
-	Количество сохраненных паролей: %d
-	Количество сохраненных карт: %d
-	Количество сохраненных произвольных текстов: %d
-	Количество сохраненных бинарных данных: %d
-	`, len(s.Passwords), len(s.Cards), len(s.Texts), len(s.Binaries))
+// ListUserData метод возвращает количество сохраненных строк пользователя.
+func (s *UserStorage) ListUserData() (passwords, cards, texts, binaries int) {
+	return len(s.Passwords), len(s.Cards), len(s.Texts), len(s.Binaries)
 }
 
-// SliceUserData метод выводит на экран информацию о сохраненных строках пользователя в соответствующем разделе.
-func (s *UserStorage) SliceUserData(i int) {
-	switch i {
-	case 1:
-		for i, val := range s.Passwords {
-			fmt.Printf("Номер: %d, Имя: %s\n", i+1, val.Name)
-		}
-	case 2:
-		for i, val := range s.Cards {
-			fmt.Printf("Номер: %d, Имя: %s\n", i+1, val.Name)
-		}
-	case 3:
-		for i, val := range s.Texts {
-			fmt.Printf("Номер: %d, Имя: %s\n", i+1, val.Name)
-		}
-	case 4:
-		for i, val := range s.Binaries {
-			fmt.Printf("Номер: %d, Имя: %s\n", i+1, val.Name)
-		}
-	}
+// SliceUserData метод возвращает информацию о сохраненных строках пользователя в разделе паролей.
+func (s *UserStorage) SliceUsersPasswords() []Password {
+	return s.Passwords
 }
 
-// StringUserData метод выводит на экран полную информацию о сохраненной записи.
-func (s *UserStorage) StringUserData(i, v int) {
-	switch i {
-	case 1:
-		if v >= len(s.Passwords) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		val := s.Passwords[v]
-		fmt.Printf(`Данные строки:
-		Имя: %s Логин: %s Пароль: %s Примечание: %s
-		`, val.Name, val.Login, val.Pass, val.Comment)
-	case 2:
-		if v >= len(s.Cards) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		val := s.Cards[v]
-		fmt.Printf(`Данные строки:
-		Имя: %s Номер карты: %s Примечание %s
-		`, val.Name, val.CardNumber, val.Comment)
-	case 3:
-		if v >= len(s.Texts) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		val := s.Texts[v]
-		fmt.Printf(`Данные строки:
-		Имя: %s текст: %s Примечание %s
-		`, val.Name, val.Data, val.Comment)
-	case 4:
-		if v >= len(s.Binaries) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		val := s.Texts[v]
-		fmt.Printf(`Данные строки:
-		Имя: %s размер данных: %d символов Примечание %s
-		`, val.Name, len(val.Data), val.Comment)
-	}
+// SliceUserData метод возвращает информацию о сохраненных строках пользователя в разделе карт.
+func (s *UserStorage) SliceUsersCards() []Card {
+	return s.Cards
 }
 
-// AddUserData метод добавляет новую запись в соответствующем разделе.
-func (s *UserStorage) AddUserData(i int) {
-	switch i {
-	case 1:
-		var pass = Password{}
-		fmt.Print("Введите имя записи: ")
-		fmt.Scanln(&pass.Name)
-		fmt.Print("Введите логин: ")
-		fmt.Scanln(&pass.Login)
-		fmt.Print("Введите пароль: ")
-		fmt.Scanln(&pass.Pass)
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&pass.Comment)
-		s.Passwords = append(s.Passwords, pass)
-		fmt.Println("Данные успешно добавлены")
-	case 2:
-		var card = Card{}
-		fmt.Print("Введите имя записи: ")
-		fmt.Scanln(&card.Name)
-		for {
-			fmt.Print("Введите номер карты: ")
-			fmt.Scanln(&card.CardNumber)
-			if crypto.LynnCheckOrder([]byte(card.CardNumber)) {
-				break
-			}
-			fmt.Println("Номер карты содержит ошибку. Попробуйте еще раз")
-		}
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&card.Comment)
-		s.Cards = append(s.Cards, card)
-		fmt.Println("Данные успешно добавлены")
-	case 3:
-		var text = Text{}
-		fmt.Print("Введите имя записи: ")
-		fmt.Scanln(&text.Name)
-		fmt.Print("Введите запись: ")
-		fmt.Scanln(&text.Data)
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&text.Comment)
-		s.Texts = append(s.Texts, text)
-		fmt.Println("Данные успешно добавлены")
-	case 4:
-		var file string
-		fmt.Print("Введите путь к файлу, размер файла не должен превышать 64kB: ")
-		fmt.Scanln(&file)
-		var binary = Binary{}
-		var err error
-		binary.Name, binary.Data, err = readUserFile(file)
-		if errors.Is(err, gkerrors.ErrTooBig) {
-			fmt.Println("Размер файла превышает допустимые 64кБ")
-			return
-		}
-		if err != nil {
-			fmt.Println("Ошибка чтения файла")
-			return
-		}
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&binary.Comment)
-		s.Binaries = append(s.Binaries, binary)
-		fmt.Println("Данные успешно добавлены")
-	}
+// SliceUserData метод возвращает информацию о сохраненных строках пользователя в разделе текстов.
+func (s *UserStorage) SliceUsersTexts() []Text {
+	return s.Texts
 }
 
-// readFile метод считывает данные из файла
-func readUserFile(path string) (string, []byte, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", nil, err
-	}
-	fi, err := file.Stat()
-	if err != nil {
-		return "", nil, err
-	}
-	if fi.Size() > 65536 {
-		return "", nil, gkerrors.ErrTooBig
-	}
-	defer file.Close()
-	var fileBZ = make([]byte, fi.Size())
-	_, err = file.Read(fileBZ)
-	if err != nil {
-		log.Error().Err(err).Msg("readFile reading file err")
-		return "", nil, err
-	}
-	return fi.Name(), fileBZ, nil
+// SliceUserData метод возвращает информацию о сохраненных строках пользователя в разделе двоичных данных.
+func (s *UserStorage) SliceUsersBinaries() []Binary {
+	return s.Binaries
 }
 
-// EditUserData метод редактирует существующую запись в соответствующем разделе.
-func (s *UserStorage) EditUserData(i, v int) {
-	switch i {
-	case 1:
-		if v >= len(s.Passwords) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		fmt.Print("Введите имя записи: ")
-		fmt.Scanln(&s.Passwords[v].Name)
-		fmt.Print("Введите логин: ")
-		fmt.Scanln(&s.Passwords[v].Login)
-		fmt.Print("Введите пароль: ")
-		fmt.Scanln(&s.Passwords[v].Pass)
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&s.Passwords[v].Comment)
-		fmt.Println("Данные успешно изменены")
-	case 2:
-		if v >= len(s.Cards) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		fmt.Print("Введите имя записи: ")
-		fmt.Scanln(&s.Cards[v].Name)
-		for {
-			fmt.Print("Введите номер карты: ")
-			fmt.Scanln(&s.Cards[v].CardNumber)
-			if crypto.LynnCheckOrder([]byte(s.Cards[v].CardNumber)) {
-
-				break
-			}
-			fmt.Println("Номер карты содержит ошибку. Попробуйте еще раз")
-		}
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&s.Cards[v].Comment)
-		fmt.Println("Данные успешно изменены")
-	case 3:
-		if v >= len(s.Texts) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		fmt.Print("Введите имя записи: ")
-		fmt.Scanln(&s.Texts[v].Name)
-		fmt.Print("Введите запись: ")
-		fmt.Scanln(&s.Texts[v].Data)
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&s.Texts[v].Comment)
-		fmt.Println("Данные успешно изменены")
-	case 4:
-		if v >= len(s.Binaries) {
-			fmt.Println("В базе нет строки с таким номером!")
-			return
-		}
-		var file string
-		fmt.Print("Введите путь к файлу, размер файла не должен превышать 64kB: ")
-		fmt.Scanln(&file)
-		var binary = Binary{}
-		var err error
-		binary.Name, binary.Data, err = readUserFile(file)
-		if errors.Is(err, gkerrors.ErrTooBig) {
-			fmt.Println("Размер файла превышает допустимые 64кБ")
-			return
-		}
-		if err != nil {
-			fmt.Println("Ошибка чтения файла")
-			return
-		}
-		fmt.Print("Введите примечание: ")
-		fmt.Scanln(&binary.Comment)
-		s.Binaries[v] = binary
-		fmt.Println("Данные успешно изменены")
+// StringUsersPassword метод возвращает полную информацию о сохраненной строке записи с паролем.
+func (s *UserStorage) StringUsersPassword(v int) *Password {
+	if v >= len(s.Passwords) {
+		return nil
 	}
+	return &s.Passwords[v]
+}
+
+// StringUsersCard метод возвращает полную информацию о сохраненной строке записи с картами.
+func (s *UserStorage) StringUsersCard(v int) *Card {
+	if v >= len(s.Cards) {
+		return nil
+	}
+	return &s.Cards[v]
+}
+
+// StringUsersText метод возвращает полную информацию о сохраненной строке записи с текстовыми данными.
+func (s *UserStorage) StringUsersText(v int) *Text {
+	if v >= len(s.Texts) {
+		return nil
+	}
+	return &s.Texts[v]
+}
+
+// StringUsersBinary метод возвращает полную информацию о сохраненной строке записи с двоичными данными.
+func (s *UserStorage) StringUsersBinary(v int) *Binary {
+	if v >= len(s.Binaries) {
+		return nil
+	}
+	return &s.Binaries[v]
+}
+
+// AddUserData метод добавляет новую запись с паролем.
+func (s *UserStorage) AddUsersPassword(pass *Password) {
+	s.Passwords = append(s.Passwords, *pass)
+}
+
+// AddUserData метод добавляет новую запись с картами.
+func (s *UserStorage) AddUsersCard(card *Card) {
+	s.Cards = append(s.Cards, *card)
+}
+
+// AddUserData метод добавляет новую запись с текстом.
+func (s *UserStorage) AddUsersText(text *Text) {
+	s.Texts = append(s.Texts, *text)
+}
+
+// AddUserData метод добавляет новую запись с двоичными данными.
+func (s *UserStorage) AddUsersBinary(binary *Binary) {
+	s.Binaries = append(s.Binaries, *binary)
+}
+
+// EditUsersPassword метод редактирует существующую запись с данными пароля.
+func (s *UserStorage) EditUsersPassword(i int, password *Password) {
+	s.Passwords[i] = *password
+}
+
+// EditUsersCard метод редактирует существующую запись с данными карты.
+func (s *UserStorage) EditUsersCard(i int, card *Card) {
+	s.Cards[i] = *card
+}
+
+// EditUsersCard метод редактирует существующую запись с данными текста.
+func (s *UserStorage) EditUsersText(i int, text *Text) {
+	s.Texts[i] = *text
+}
+
+// EditUsersBinary метод редактирует существующую запись с двоичными данными.
+func (s *UserStorage) EditUsersBinary(i int, binary *Binary) {
+	s.Binaries[i] = *binary
 }

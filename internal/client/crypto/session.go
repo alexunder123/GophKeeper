@@ -14,7 +14,7 @@ func LynnCheckOrder(lynn []byte) bool {
 	for i, d := range lynn {
 		j, err := strconv.Atoi(string(d))
 		if err != nil {
-			log.Error().Err(err).Msg("LynnCheckOrder strconv err")
+			log.Error().Err(err).Msgf("LynnCheckOrder strconv err. Card: %b", lynn)
 			return false
 		}
 		lynnArr[i] = j

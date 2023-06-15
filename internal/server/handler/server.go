@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rsa"
+	"database/sql"
 	"encoding/gob"
 	"errors"
 
@@ -68,12 +69,6 @@ func (s *GophKeeperServer) NewSessionID(ctx context.Context, in *pb.NewSessionID
 
 // NewUser создает нового пользователя.
 func (s *GophKeeperServer) NewUser(ctx context.Context, in *pb.NewUserRequest) (*pb.NewUserResponce, error) {
-	_, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("NewUser CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-
 	userLogin, userPass, err := s.rsa.DecryptLogin(in.SessionID, in.NewUser)
 	if errors.Is(err, gkerrors.ErrLoginIncorrect) {
 		return nil, status.Error(codes.InvalidArgument, "users login contains error")
@@ -124,28 +119,22 @@ func (s *GophKeeperServer) NewUser(ctx context.Context, in *pb.NewUserRequest) (
 
 // LoginUser авторизует пользователя.
 func (s *GophKeeperServer) LoginUser(ctx context.Context, in *pb.LoginUserRequest) (*pb.LoginUserResponce, error) {
-	_, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("LoginUser CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-
 	userLogin, userPass, err := s.rsa.DecryptLogin(in.SessionID, in.LoginUser)
 	if errors.Is(err, gkerrors.ErrLoginIncorrect) {
 		return nil, status.Error(codes.InvalidArgument, "users login contains error")
 	}
 	if err != nil {
-		log.Error().Err(err).Msg("NewUser DecryptLogin error")
+		log.Error().Err(err).Msg("LoginUser DecryptLogin error")
 		return nil, status.Error(codes.Internal, "DecryptLogin error")
 	}
 
 	userID, err := s.strg.AuthUser(userLogin, userPass)
 	if errors.Is(err, gkerrors.ErrNoSuchUser) {
-		log.Debug().Msgf("NewUser AuthUser ErrNoSuchUser")
+		log.Debug().Msgf("LoginUser AuthUser ErrNoSuchUser, %s", userLogin)
 		return nil, status.Error(codes.NotFound, "user with such login not registered")
 	}
 	if errors.Is(err, gkerrors.ErrWrongPassword) {
-		log.Debug().Msgf("NewUser AuthUser ErrWrongPassword")
+		log.Debug().Msgf("LoginUser AuthUser ErrWrongPassword")
 		return nil, status.Error(codes.InvalidArgument, "password incorrect")
 	}
 	if err != nil {
@@ -154,19 +143,19 @@ func (s *GophKeeperServer) LoginUser(ctx context.Context, in *pb.LoginUserReques
 	}
 
 	s.rsa.AddUserID(in.SessionID, userID)
-	log.Debug().Msgf("NewUser AddUserID return")
+	log.Debug().Msgf("LoginUser AddUserID return")
 	var responce pb.LoginUserResponce
 	responce.UserID, err = s.rsa.EncryptData(in.SessionID, userID, []byte(`userID`))
-	log.Debug().Msgf("NewUser responce.UserID return")
+	log.Debug().Msgf("LoginUser responce.UserID return")
 	if err != nil {
-		log.Error().Err(err).Msg("LoginUser EncryptData error")
+		log.Error().Err(err).Msgf("LoginUser EncryptData error, %s", userLogin)
 		return nil, status.Error(codes.Internal, "EncryptData error")
 	}
 
 	responce.Sign, err = s.rsa.SignData(in.SessionID)
-	log.Debug().Msgf("NewUser responce.Sign return")
+	log.Debug().Msgf("LoginUser responce.Sign return")
 	if err != nil {
-		log.Error().Err(err).Msg("LoginUser EncryptOAEP signing error")
+		log.Error().Err(err).Msgf("LoginUser EncryptOAEP signing error, %s", userLogin)
 		return nil, status.Error(codes.Internal, "EncryptData error")
 	}
 
@@ -175,15 +164,7 @@ func (s *GophKeeperServer) LoginUser(ctx context.Context, in *pb.LoginUserReques
 
 // UserData передает клиенту сохраненные данные пользователя.
 func (s *GophKeeperServer) UserData(ctx context.Context, in *pb.UserDataRequest) (*pb.UserDataResponce, error) {
-	userID, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("UserData CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-	if userID == "" {
-		log.Error().Err(err).Msg("UserData userID empty")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
+	userID := s.rsa.GetUserID(in.SessionID)
 	var responce pb.UserDataResponce
 	userData, timeStamp, symKey, err := s.strg.UsersData(userID)
 	if errors.Is(err, gkerrors.ErrNoUserData) {
@@ -221,18 +202,10 @@ func (s *GophKeeperServer) UserData(ctx context.Context, in *pb.UserDataRequest)
 
 // TimeStamp передает клиенту отметку времени о последних сохраненных данных пользователя.
 func (s *GophKeeperServer) TimeStamp(ctx context.Context, in *pb.TimeStampRequest) (*pb.TimeStampResponce, error) {
-	userID, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("TimeStamp CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-	if userID == "" {
-		log.Error().Err(err).Msg("UserData userID empty")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-
+	userID := s.rsa.GetUserID(in.SessionID)
+	log.Error().Msgf("TimeStamp userID = %s", userID)
 	timeStamp, locked, timeLocked, err := s.strg.UsersTimeStamp(userID)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Error().Err(err).Msg("TimeStamp error")
 		return nil, status.Error(codes.Internal, "TimeStamp error")
 	}
@@ -249,18 +222,10 @@ func (s *GophKeeperServer) TimeStamp(ctx context.Context, in *pb.TimeStampReques
 
 // DataLock помечает данные клиента, как заблокированные на изменение другими пользователями
 func (s *GophKeeperServer) DataLock(ctx context.Context, in *pb.DataLockRequest) (*pb.DataLockResponce, error) {
-	userID, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("TimeStamp CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-	if userID == "" {
-		log.Error().Err(err).Msg("UserData userID empty")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-
+	userID := s.rsa.GetUserID(in.SessionID)
 	locked, timeLocked := s.strg.UsersDataLock(userID, in.SessionID)
 	var responce = pb.DataLockResponce{Locked: locked, TimeLocked: timeLocked}
+	var err error
 	responce.Sign, err = s.rsa.SignData(in.SessionID)
 	if err != nil {
 		log.Error().Err(err).Msg("UserData EncryptOAEP signing error")
@@ -272,16 +237,7 @@ func (s *GophKeeperServer) DataLock(ctx context.Context, in *pb.DataLockRequest)
 
 // UpdateData принимает от клиента обновленные данные пользователя.
 func (s *GophKeeperServer) UpdateData(ctx context.Context, in *pb.UpdateDataRequest) (*pb.UpdateDataResponce, error) {
-	log.Debug().Msgf("Данные для сохранения пришли на сервер")
-	userID, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("UpdateData CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-	if userID == "" {
-		log.Error().Err(err).Msg("UserData userID empty")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
+	userID := s.rsa.GetUserID(in.SessionID)
 	save, timeStamp, err := s.strg.UpdateUserData(userID, in.SessionID, in.TimeStamp, in.UserData)
 
 	if errors.Is(err, gkerrors.ErrLocked) {
@@ -307,26 +263,13 @@ func (s *GophKeeperServer) UpdateData(ctx context.Context, in *pb.UpdateDataRequ
 
 // LogOut закрывает сессию пользователя.
 func (s *GophKeeperServer) LogOut(ctx context.Context, in *pb.LogOutRequest) (*pb.LogOutResponce, error) {
-	_, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("LogOut CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
 	s.rsa.UserLogOut(in.SessionID)
 	return &pb.LogOutResponce{Status: true}, nil
 }
 
 // ChangePassword метод обновляет пароль пользователя.
 func (s *GophKeeperServer) ChangePassword(ctx context.Context, in *pb.ChangePasswordRequest) (*pb.ChangePasswordResponce, error) {
-	userID, err := s.rsa.CheckSign(in.SessionID, in.UserSign)
-	if err != nil {
-		log.Error().Err(err).Msg("NewUser CheckSign error")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
-	if userID == "" {
-		log.Error().Err(err).Msg("UserData userID empty")
-		return nil, status.Error(codes.Unauthenticated, "incorrect sign encryption")
-	}
+	userID := s.rsa.GetUserID(in.SessionID)
 	old, err := s.rsa.DecryptPassword(in.SessionID, in.OldPassword, []byte("oldPass"))
 	if err != nil {
 		log.Error().Err(err).Msg("NewUser DecryptLogin error")

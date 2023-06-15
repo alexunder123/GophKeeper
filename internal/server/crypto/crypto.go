@@ -98,6 +98,13 @@ func (s *Sessions) CheckSign(sessionID string, userSignBZ []byte) (string, error
 	return userID, nil
 }
 
+func (s *Sessions) GetUserID(sessionID string) string {
+	s.RLock()
+	userID := s.sessions[sessionID].userID
+	s.RUnlock()
+	return userID
+}
+
 // DecryptLogin метод расшифровывает логин и пароль пользователя
 func (s *Sessions) DecryptLogin(sessionID string, userLoginBZ []byte) (string, string, error) {
 	s.RLock()
