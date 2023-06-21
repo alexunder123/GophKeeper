@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "grpc/proto";
+
+message newSessionIDRequest {
+  bytes userPublicKeyBZ = 1; //открытый ключ для шифрования данных
+}
+
+message newSessionIDResponce {
+  string sessionID = 1; //новый SessionID
+  bytes publicKeyBZ = 2; //открытый ключ для шифрования данных
+}
+
+message newUserRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes newUser = 2; //зашифрованные логин и пароль нового пользователя
+  bytes userSign = 3; //Подпись данных пользователем
+}
+
+message newUserResponce {
+  bytes userID = 1; //зашифрованный userID пользователя
+  bytes symKey = 2; //зашифрованный симметричный ключ пользователя
+  string timeStamp = 3; //отметка времени последнего сохранения данных пользователя
+  bytes sign = 4; //Подпись данных сервером
+}
+
+message loginUserRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes loginUser = 2; //зашифрованные логин и пароль пользователя
+  bytes userSign = 3; //Подпись данных пользователем
+}
+
+message loginUserResponce {
+  bytes userID = 1; //зашифрованный userID пользователя
+  bytes sign = 3; //Подпись данных сервером
+}
+
+message userDataRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes userSign = 2; //Подпись данных пользователем
+}
+
+message userDataResponce {
+  bytes userData = 1; //зашифрованные данные пользователя
+  string timeStamp = 2; //отметка времени последнего сохранения данных пользователя
+  bytes symKey = 3; //зашифрованный симметричный ключ пользователя
+  bool locked = 4; //отметка о блокировке данных на изменение; true - заблокировано, false - свободно
+  string timeLocked = 5; //отметка до какого времени данные на редактирование заблокированы пользователем
+  bytes sign = 6; //Подпись данных сервером
+}
+
+message timeStampRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes userSign = 2; //Подпись данных пользователем
+}
+
+message timeStampResponce {
+  string timeStamp = 1; //отметка времени последнего сохранения данных пользователя
+  bool locked = 2; //отметка о блокировке данных на изменение; true - заблокировано, false - свободно
+  string timeLocked = 3; //отметка до какого времени данные на редактирование заблокированы пользователем
+  bytes sign = 4; //Подпись данных сервером
+}
+
+message dataLockRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes userSign = 2; //Подпись данных пользователем
+}
+
+message dataLockResponce {
+  bool locked = 1; //отметка о блокировке данных на изменение 
+  string timeLocked = 2; //отметка до какого времени данные на редактирование заблокированы пользователем
+  bytes sign = 3; //Подпись данных сервером
+}
+
+message updateDataRequest {
+  string sessionID = 1; //SessionID пользователя
+  string timeStamp = 2; //отметка времени последнего сохранения данных пользователя
+  bytes userData = 3; //зашифрованные данные пользователя
+  bytes userSign = 4; //Подпись данных пользователем
+}
+
+message updateDataResponce {
+  bool status = 1; //результат true - сохранено, false - ошибка, уточнение в error
+  string timeStamp = 2; //отметка времени последнего сохранения данных пользователя
+  bytes sign = 3; //Подпись данных сервером
+}
+
+message logOutRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes userSign = 2; //Подпись данных пользователем
+}
+
+message logOutResponce {
+  bool status = 1; //результат true - пользователь разлогинен, false - ошибка, уточнение в error
+}
+
+message changePasswordRequest {
+  string sessionID = 1; //SessionID пользователя
+  bytes oldPassword = 2; //зашифрованные текущий пароль пользователя
+  bytes newPassword = 3; //зашифрованные новый пароль пользователя
+  bytes userSign = 4; //Подпись данных пользователем
+}
+
+message changePasswordResponce {
+  bool status = 1; //результат true - пароль изменен, false - ошибка, уточнение в error
+  bytes sign = 2; //Подпись данных сервером
+}
+
+service GophKeeper {
+  rpc NewSessionID(newSessionIDRequest) returns (newSessionIDResponce);
+  rpc NewUser(newUserRequest) returns (newUserResponce);
+  rpc LoginUser(loginUserRequest) returns (loginUserResponce);
+  rpc UserData(userDataRequest) returns (userDataResponce);
+  rpc TimeStamp(timeStampRequest) returns (timeStampResponce);
+  rpc DataLock(dataLockRequest) returns (dataLockResponce);
+  rpc UpdateData(updateDataRequest) returns (updateDataResponce);
+  rpc LogOut(logOutRequest) returns (logOutResponce);
+  rpc ChangePassword(changePasswordRequest) returns (changePasswordResponce);
+}
